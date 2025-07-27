@@ -15,6 +15,27 @@ interface FormulaResult {
   error?: string;
 }
 
+// Basic client-side formula validation
+const isFormulaValid = (formula: string): boolean => {
+  // Check if formula only contains valid characters
+  if (!formula || !/^[A-Za-z0-9\(\)]+$/.test(formula)) {
+    return false;
+  }
+  
+  // Check for balanced parentheses
+  let stack = 0;
+  for (let i = 0; i < formula.length; i++) {
+    if (formula[i] === '(') {
+      stack++;
+    } else if (formula[i] === ')') {
+      stack--;
+      if (stack < 0) return false; // More closing than opening parentheses
+    }
+  }
+  
+  return stack === 0; // All parentheses should be balanced
+};
+
 function App() {
   const [formula, setFormula] = useState<string>('');
   const [result, setResult] = useState<FormulaResult | null>(null);
@@ -24,6 +45,13 @@ function App() {
   const [historyRefresh, setHistoryRefresh] = useState<number>(0);
   const [showFormula, setShowFormula] = useState<boolean>(false);
   const [darkMode, setDarkMode] = useState<boolean>(false);
+  const [isValid, setIsValid] = useState<boolean>(true);
+
+  // Validate formula on input change
+  const handleFormulaChange = (value: string) => {
+    setFormula(value);
+    setIsValid(isFormulaValid(value));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,10 +61,17 @@ function App() {
       return;
     }
     
+    if (!isValid) {
+      setError('Formula appears to be invalid. Check for balanced parentheses and valid characters.');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     
     try {
+      console.log(`Calculating molar mass for formula: ${formula}`);
+      
       const response = await fetch('http://localhost:8000/molar-mass', {
         method: 'POST',
         headers: {
@@ -46,6 +81,7 @@ function App() {
       });
       
       const data = await response.json();
+      console.log('API Response:', data);
       
       if (!response.ok) {
         throw new Error(data.detail || 'Failed to calculate molar mass');
@@ -56,6 +92,7 @@ function App() {
       // Trigger history refresh
       setHistoryRefresh(prev => prev + 1);
     } catch (err) {
+      console.error('Error calculating molar mass:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
       setResult(null);
     } finally {
@@ -63,23 +100,12 @@ function App() {
     }
   };
 
-  const saveToHistory = async () => {
-    if (!result) return;
-    
-    try {
-      await fetch('http://localhost:8000/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ formula: result.formula }),
-      });
-      
-      // Refresh history
-      setHistoryRefresh(prev => prev + 1);
-    } catch (err) {
-      console.error('Error saving to history:', err);
-    }
+  // We can remove this function as saving is already done automatically when calculating
+  // and the /save endpoint has been removed from the backend
+  const handleFormulaSelect = (selectedFormula: string) => {
+    setFormula(selectedFormula);
+    // Optionally close history panel if it's shown
+    if (showHistory) setShowHistory(false);
   };
 
   // Toggle dark mode effect
@@ -156,12 +182,21 @@ function App() {
                         <input
                           type="text"
                           id="formula"
-                          className={`formula-input block w-full px-4 py-3 border ${darkMode ? 'bg-gray-900 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
+                          className={`formula-input block w-full px-4 py-3 border ${
+                            darkMode ? 'bg-gray-900 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'
+                          } ${
+                            formula && !isValid ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'focus:ring-blue-500 focus:border-blue-500'
+                          } rounded-md shadow-sm focus:outline-none focus:ring-2 transition-all duration-200`}
                           placeholder="e.g., H2O, NaCl, Ca(OH)2"
                           value={formula}
-                          onChange={(e) => setFormula(e.target.value)}
+                          onChange={(e) => handleFormulaChange(e.target.value)}
                           spellCheck="false"
                         />
+                        {formula && !isValid && (
+                          <div className="mt-1 text-red-500 text-xs">
+                            Formula appears invalid. Check parentheses balance and characters.
+                          </div>
+                        )}
                         {formula && (
                           <button
                             type="button"
@@ -263,13 +298,10 @@ function App() {
                       )}
                       
                       <div className="mt-4 flex justify-end">
-                        <button
-                          onClick={saveToHistory}
-                          className={`inline-flex items-center px-3 py-2 ${darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'text-blue-600 hover:text-blue-800'} text-sm font-medium rounded-md transition-colors duration-200`}
-                        >
-                          <FaSave className="mr-1.5" />
-                          Save to History
-                        </button>
+                        <span className="text-xs text-green-600 dark:text-green-400">
+                          <FaSave className="inline-block mr-1.5" />
+                          Automatically saved to history
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -293,7 +325,10 @@ function App() {
                   
                   {showHistory && (
                     <div key={historyRefresh} className="mt-2">
-                      <FormulaHistory />
+                      <FormulaHistory 
+                        refresh={historyRefresh}
+                        onFormulaSelect={handleFormulaSelect}
+                      />
                     </div>
                   )}
                   

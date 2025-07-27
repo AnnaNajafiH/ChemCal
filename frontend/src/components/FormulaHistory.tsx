@@ -1,6 +1,27 @@
 import { useState, useEffect } from 'react';
-import { FaTrash, FaFlask, FaHistory } from 'react-icons/fa';
+import { FaTrash, FaFlask, FaHistory, FaPencilAlt, FaSave, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
 import React from 'react';
+
+// Basic client-side formula validation
+const isFormulaValid = (formula: string): boolean => {
+  // Check if formula only contains valid characters
+  if (!formula || !/^[A-Za-z0-9\(\)]+$/.test(formula)) {
+    return false;
+  }
+  
+  // Check for balanced parentheses
+  let stack = 0;
+  for (let i = 0; i < formula.length; i++) {
+    if (formula[i] === '(') {
+      stack++;
+    } else if (formula[i] === ')') {
+      stack--;
+      if (stack < 0) return false; // More closing than opening parentheses
+    }
+  }
+  
+  return stack === 0; // All parentheses should be balanced
+};
 
 interface FormulaHistoryItem {
   id: number;
@@ -9,16 +30,24 @@ interface FormulaHistoryItem {
   timestamp: string;
 }
 
-const FormulaHistory: React.FC = () => {
+interface FormulaHistoryProps {
+  refresh?: number;
+  onFormulaSelect?: (formula: string) => void;
+}
+
+const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaSelect }) => {
   const [history, setHistory] = useState<FormulaHistoryItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editFormula, setEditFormula] = useState<string>("");
+  const [isValidEdit, setIsValidEdit] = useState<boolean>(true);
   
   useEffect(() => {
     const fetchHistory = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:8000/history');
+        const response = await fetch('http://localhost:8000/history?limit=50');
         
         if (!response.ok) {
           throw new Error('Failed to fetch history');
@@ -35,7 +64,7 @@ const FormulaHistory: React.FC = () => {
     };
     
     fetchHistory();
-  }, []);
+  }, [refresh]);
   
   // Format formula with subscripts for display
   const formatFormula = (formula: string): React.ReactNode => {
@@ -52,7 +81,10 @@ const FormulaHistory: React.FC = () => {
     );
   };
 
+  // Handle delete function
   const deleteHistoryItem = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this formula?')) return;
+    
     try {
       const response = await fetch(`http://localhost:8000/history/${id}`, {
         method: 'DELETE'
@@ -65,6 +97,61 @@ const FormulaHistory: React.FC = () => {
       setHistory(history.filter(item => item.id !== id));
     } catch (err) {
       console.error('Error deleting history item:', err);
+    }
+  };
+  
+  // Handle edit functions
+  const handleEditChange = (value: string) => {
+    setEditFormula(value);
+    setIsValidEdit(isFormulaValid(value));
+  };
+
+  const startEditing = (item: FormulaHistoryItem) => {
+    setEditingId(item.id);
+    setEditFormula(item.formula);
+    setIsValidEdit(isFormulaValid(item.formula));
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditFormula("");
+    setIsValidEdit(true);
+  };
+
+  const saveEdit = async (id: number) => {
+    if (!isValidEdit) {
+      alert('Please fix the formula before saving. Check for balanced parentheses and valid characters.');
+      return;
+    }
+    
+    try {
+      console.log(`Attempting to update formula with ID ${id} to: ${editFormula}`);
+      
+      const response = await fetch(`http://localhost:8000/history/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ formula: editFormula }),
+      });
+      
+      const responseData = await response.json();
+      console.log('API Response:', responseData);
+      
+      if (!response.ok) {
+        throw new Error(responseData.detail || 'Failed to update formula');
+      }
+      
+      // Update the item in the history
+      setHistory(history.map(item => 
+        item.id === id ? responseData : item
+      ));
+      
+      setEditingId(null);
+    } catch (err) {
+      console.error('Error updating formula:', err);
+      alert(`Failed to update formula: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError('Failed to update formula');
     }
   };
   
@@ -108,26 +195,80 @@ const FormulaHistory: React.FC = () => {
           key={item.id} 
           className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all"
         >
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <FaFlask className="text-blue-500 dark:text-blue-400 mr-2" />
-              <span className="font-medium dark:text-white">
-                {formatFormula(item.formula)}
-              </span>
+          {editingId === item.id ? (
+            <div className="flex flex-col mb-2">
+              <div className="flex items-center">
+                <input
+                  type="text"
+                  value={editFormula}
+                  onChange={(e) => handleEditChange(e.target.value)}
+                  className={`flex-1 px-3 py-2 border rounded dark:bg-gray-700 ${
+                    !isValidEdit ? 'border-red-500' : 'dark:border-gray-600'
+                  } dark:text-white`}
+                  placeholder="Enter chemical formula"
+                />
+                <button 
+                  onClick={() => saveEdit(item.id)}
+                  className={`ml-2 p-2 ${
+                    !isValidEdit ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300'
+                  }`}
+                  title="Save"
+                  disabled={!isValidEdit}
+                >
+                  <FaSave />
+                </button>
+                <button 
+                  onClick={cancelEditing}
+                  className="ml-2 p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                  title="Cancel"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              {!isValidEdit && (
+                <div className="mt-1 flex items-center text-red-500 text-xs">
+                  <FaExclamationTriangle className="mr-1" />
+                  <span>Invalid formula. Check parentheses and characters.</span>
+                </div>
+              )}
             </div>
-            <span className="text-gray-600 dark:text-gray-300 font-mono">{item.molar_mass.toFixed(4)} g/mol</span>
-          </div>
+          ) : (
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <FaFlask className="text-blue-500 dark:text-blue-400 mr-2" />
+                <span 
+                  className="font-medium dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                  onClick={() => onFormulaSelect && onFormulaSelect(item.formula)}
+                  title="Click to use this formula"
+                >
+                  {formatFormula(item.formula)}
+                </span>
+              </div>
+              <span className="text-gray-600 dark:text-gray-300 font-mono">{item.molar_mass.toFixed(4)} g/mol</span>
+            </div>
+          )}
           <div className="flex justify-between items-center mt-2">
             <div className="text-xs text-gray-500 dark:text-gray-400">
               {new Date(item.timestamp).toLocaleString()}
             </div>
-            <button
-              onClick={() => deleteHistoryItem(item.id)}
-              className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 transition-colors p-1"
-              title="Delete from history"
-            >
-              <FaTrash />
-            </button>
+            <div className="flex space-x-2">
+              {editingId !== item.id && (
+                <button
+                  onClick={() => startEditing(item)}
+                  className="text-xs text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 transition-colors p-1"
+                  title="Edit formula"
+                >
+                  <FaPencilAlt />
+                </button>
+              )}
+              <button
+                onClick={() => deleteHistoryItem(item.id)}
+                className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 transition-colors p-1"
+                title="Delete from history"
+              >
+                <FaTrash />
+              </button>
+            </div>
           </div>
         </div>
       ))}
