@@ -9,11 +9,14 @@ import os
 # Load environment variables from .env file
 load_dotenv()
 
-# Use environment variables or hardcoded connection string for now (in production, use environment variables)
+# Hard-coded connection string for local development
+# For Docker, the environment variable DATABASE_URL should be set
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "mysql+pymysql://root:password@localhost/molar_mass_db" # fallback
+    "mysql+pymysql://root:root@localhost:3306/molar_mass_db"
 )
+
+print(f"Connecting to database with: {SQLALCHEMY_DATABASE_URL}")
 
 # Create SQLAlchemy engine
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
@@ -33,10 +36,23 @@ class FormulaHistory(Base):
     molar_mass = Column(Float)
     timestamp = Column(DateTime, default=func.now())
     user_ip = Column(String(45), nullable=True)  # IPv6 addresses can be long
+    boiling_point = Column(String(100), nullable=True)
+    melting_point = Column(String(100), nullable=True)
+    density = Column(String(100), nullable=True)
+    state_at_room_temp = Column(String(50), nullable=True)
+    iupac_name = Column(String(255), nullable=True)
+    hazard_classification = Column(String(255), nullable=True)
 
 # Function to create all tables
 def create_tables():
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+        print(f"Database tables created successfully using connection: {SQLALCHEMY_DATABASE_URL}")
+    except Exception as e:
+        print(f"Failed to create database tables: {str(e)}")
+        print(f"Connection string used: {SQLALCHEMY_DATABASE_URL}")
+        print("Please check your database connection settings and ensure MySQL is running")
+        raise
 
 # Function to get database session
 def get_db():

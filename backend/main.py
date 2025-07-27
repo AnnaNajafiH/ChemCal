@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime
 from database import FormulaHistory, get_db, create_tables
+from pubchem_api import get_chemical_properties
 
 app = FastAPI(title="Molar Mass Calculator API", 
               description="API for calculating molar mass of chemical compounds")
@@ -111,12 +112,24 @@ class FormulaResponse(BaseModel):
     formula: str
     molar_mass: float
     unit: str
+    boiling_point: Optional[str] = None
+    melting_point: Optional[str] = None
+    density: Optional[str] = None
+    state_at_room_temp: Optional[str] = None
+    iupac_name: Optional[str] = None
+    hazard_classification: Optional[str] = None
 
 class FormulaHistoryModel(BaseModel):
     id: int
     formula: str
     molar_mass: float
     timestamp: datetime
+    boiling_point: Optional[str] = None
+    melting_point: Optional[str] = None
+    density: Optional[str] = None
+    state_at_room_temp: Optional[str] = None
+    iupac_name: Optional[str] = None
+    hazard_classification: Optional[str] = None
     
     class Config:
         orm_mode = True
@@ -150,10 +163,21 @@ def get_molar_mass(request: FormulaRequest, db: Session = Depends(get_db), req: 
         validate_formula(request.formula)
         
         molar_mass = calculate_molar_mass(request.formula)
+        
+        # Fetch physical/chemical properties from PubChem API
+        properties = get_chemical_properties(request.formula)
+        
+        # Create result with properties (use values from API if available)
         result = {
             "formula": request.formula,
             "molar_mass": round(molar_mass, 4),
-            "unit": "g/mol"
+            "unit": "g/mol",
+            "boiling_point": properties.get("boiling_point"),
+            "melting_point": properties.get("melting_point"),
+            "density": properties.get("density"),
+            "state_at_room_temp": properties.get("state_at_room_temp"),
+            "iupac_name": properties.get("iupac_name"),
+            "hazard_classification": properties.get("hazard_classification")
         }
         
         # Try to save in database but don't fail if database is not available
@@ -162,7 +186,13 @@ def get_molar_mass(request: FormulaRequest, db: Session = Depends(get_db), req: 
             db_formula = FormulaHistory(
                 formula=request.formula,
                 molar_mass=round(molar_mass, 4),
-                user_ip=client_ip
+                user_ip=client_ip,
+                boiling_point=result["boiling_point"],
+                melting_point=result["melting_point"],
+                density=result["density"],
+                state_at_room_temp=result["state_at_room_temp"],
+                iupac_name=result["iupac_name"],
+                hazard_classification=result["hazard_classification"]
             )
             db.add(db_formula)
             db.commit()
