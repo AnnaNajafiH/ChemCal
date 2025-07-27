@@ -36,6 +36,9 @@ interface FormulaHistoryItem {
   state_at_room_temp?: string | null;
   iupac_name?: string | null;
   hazard_classification?: string | null;
+  structure_image_url?: string | null;
+  structure_image_svg_url?: string | null;
+  compound_url?: string | null;
 }
 
 interface FormulaHistoryProps {
@@ -255,6 +258,24 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
                 </div>
                 <span className="text-gray-600 dark:text-gray-300 font-mono">{item.molar_mass.toFixed(4)} g/mol</span>
               </div>
+
+              {/* Display molecular structure if available */}
+              {item.structure_image_url && (
+                <div className="mt-3 flex justify-center border-t pt-3 border-gray-100 dark:border-gray-700">
+                  <a 
+                    href={item.compound_url || item.structure_image_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-block hover:opacity-80 transition-opacity"
+                  >
+                    <img 
+                      src={item.structure_image_url} 
+                      alt={`Molecular structure of ${item.formula}`}
+                      className="max-h-44 min-h-36 w-auto object-contain rounded-lg bg-white p-2 shadow-sm border border-gray-100 dark:border-gray-700 transform hover:scale-105 transition-transform duration-200"
+                    />
+                  </a>
+                </div>
+              )}
 
               {/* Display additional properties if they exist */}
               {(item.iupac_name || item.state_at_room_temp || item.density || 

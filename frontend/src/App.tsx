@@ -18,6 +18,9 @@ interface FormulaResult {
   state_at_room_temp?: string | null;
   iupac_name?: string | null;
   hazard_classification?: string | null;
+  structure_image_url?: string | null;
+  structure_image_svg_url?: string | null;
+  compound_url?: string | null;
   error?: string;
 }
 
@@ -341,6 +344,24 @@ function App() {
                           </>
                         )}
                       </div>
+                      
+                      {/* Display molecular structure if available */}
+                      {result.structure_image_url && (
+                        <div className="mt-6 flex justify-center border-t pt-5 border-gray-200 dark:border-gray-700">
+                          <a 
+                            href={result.compound_url || result.structure_image_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-block hover:opacity-80 transition-opacity"
+                          >
+                            <img 
+                              src={result.structure_image_url} 
+                              alt={`Molecular structure of ${result.formula}`}
+                              className="max-h-72 min-h-56 w-auto object-contain rounded-lg bg-white p-3 shadow-md border border-gray-100 dark:border-gray-700 transform hover:scale-105 transition-transform duration-200"
+                            />
+                          </a>
+                        </div>
+                      )}
                       
                       {showFormula && (
                         <div className={`mt-4 p-3 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} text-sm`}>
