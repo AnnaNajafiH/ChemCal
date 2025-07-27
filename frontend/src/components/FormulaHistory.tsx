@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FaTrash, FaFlask, FaHistory, FaPencilAlt, FaSave, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
 import React from 'react';
+import API_URL from '../config';
 
 // Basic client-side formula validation
 const isFormulaValid = (formula: string): boolean => {
@@ -58,7 +59,7 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
     const fetchHistory = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:8000/history?limit=50');
+        const response = await fetch(`${API_URL}/history?limit=50`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch history');
@@ -97,7 +98,7 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
     if (!window.confirm('Are you sure you want to delete this formula?')) return;
     
     try {
-      const response = await fetch(`http://localhost:8000/history/${id}`, {
+      const response = await fetch(`${API_URL}/history/${id}`, {
         method: 'DELETE'
       });
       
@@ -138,7 +139,7 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
     try {
       console.log(`Attempting to update formula with ID ${id} to: ${editFormula}`);
       
-      const response = await fetch(`http://localhost:8000/history/${id}`, {
+      const response = await fetch(`${API_URL}/history/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

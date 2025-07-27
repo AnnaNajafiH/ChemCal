@@ -5,6 +5,7 @@ import { FaFlask, FaHistory, FaSave, FaCalculator, FaInfoCircle, FaExclamationTr
 import { IoMdClose } from 'react-icons/io';
 import { BiAtom } from 'react-icons/bi';
 import React from 'react';
+import API_URL from './config';
 
 
 // Types definition
@@ -81,7 +82,7 @@ function App() {
     try {
       console.log(`Calculating molar mass for formula: ${formula}`);
       
-      const response = await fetch('http://localhost:8000/molar-mass', {
+      const response = await fetch(`${API_URL}/molar-mass`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

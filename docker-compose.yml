@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8
+    container_name: molar-mass-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: molar_mass_db
+      MYSQL_USER: molar_user
+      MYSQL_PASSWORD: molar_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - molar_mass_db_data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - molar-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: molar-mass-backend
+    environment:
+      - DATABASE_URL=mysql+pymysql://molar_user:molar_pass@mysql:3306/molar_mass_db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - molar-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: molar-mass-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - molar-network
+    restart: unless-stopped
+    
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: molar-mass-phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "8080:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - molar-network
+    restart: unless-stopped
+
+volumes:
+  molar_mass_db_data:
+    name: molar_mass_db_data
+
+networks:
+  molar-network:
+    name: molar-network
