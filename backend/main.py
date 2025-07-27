@@ -7,8 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime
-
-# Import the database models
 from database import FormulaHistory, get_db, create_tables
 
 app = FastAPI(title="Molar Mass Calculator API", 
@@ -33,36 +31,68 @@ except FileNotFoundError:
         atomic_masses = json.load(file)
 
 def parse_formula(formula):
-    tokens = re.findall(r'[A-Z][a-z]?|\d+|\(|\)', formula)
-    stack = [[]]
-    i = 0
+    try:
+        tokens = re.findall(r'[A-Z][a-z]?|\d+|\(|\)', formula)
+        if not tokens:
+            raise ValueError(f"Invalid formula format: {formula}")
+        
+        # Print the tokens for debugging
+        print(f"Tokens for {formula}: {tokens}")
+        
+        stack = [[]]
+        i = 0
 
-    while i < len(tokens):
-        token = tokens[i]
+        while i < len(tokens):
+            token = tokens[i]
+            i += 1  # Always increment i after accessing tokens[i]
 
-        if token == '(':
-            stack.append([])
-        elif token == ')':
-            group = stack.pop()
-            i += 1
-            multiplier = int(tokens[i]) if i < len(tokens) and tokens[i].isdigit() else 1
-            if i < len(tokens) and tokens[i].isdigit():
-                i += 1
-            for elem, count in group:
-                stack[-1].append((elem, count * multiplier))
-            continue
-        elif re.match(r'[A-Z][a-z]?', token):
-            element = token
-            i += 1
-            count = int(tokens[i]) if i < len(tokens) and tokens[i].isdigit() else 1
-            if i < len(tokens) and tokens[i].isdigit():
-                i += 1
-            stack[-1].append((element, count))
-            continue
-        else:
-            i += 1
+            if token == '(':
+                stack.append([])
+            elif token == ')':
+                if len(stack) <= 1:
+                    raise ValueError(f"Unbalanced parentheses in formula: {formula}")
+                    
+                group = stack.pop()
+                
+                # Check for a multiplier after the closing parenthesis
+                if i < len(tokens) and tokens[i].isdigit():
+                    multiplier = int(tokens[i])
+                    i += 1
+                else:
+                    multiplier = 1
+                    
+                # Apply the multiplier to all elements in the group
+                for elem, count in group:
+                    stack[-1].append((elem, count * multiplier))
+            elif re.match(r'[A-Z][a-z]?', token):
+                element = token
+                
+                # Check for a count after the element
+                if i < len(tokens) and tokens[i].isdigit():
+                    count = int(tokens[i])
+                    i += 1
+                else:
+                    count = 1
+                    
+                stack[-1].append((element, count))
+            elif token.isdigit():
+                # This handles cases where we have a digit without a preceding element
+                # which is an error in chemical formulas
+                raise ValueError(f"Unexpected number in formula: {formula} at position {i-1}")
+            else:
+                # This should not happen with our regex pattern
+                raise ValueError(f"Invalid token in formula: {token}")
 
-    return stack[0]
+        # Check for unbalanced parentheses
+        if len(stack) != 1:
+            raise ValueError(f"Unbalanced parentheses in formula: {formula}")
+            
+        return stack[0]  # Returns a list of (element, count) pairs from the top-level group
+    except Exception as e:
+        # Catch any other unexpected errors and provide a clear message
+        print(f"Error parsing formula '{formula}': {str(e)}")
+        raise ValueError(f"Error parsing formula: {str(e)}")
+
 
 def calculate_molar_mass(formula):
     parsed = parse_formula(formula)
@@ -91,10 +121,34 @@ class FormulaHistoryModel(BaseModel):
     class Config:
         orm_mode = True
 
+# Validate chemical formula format
+def validate_formula(formula):
+    # Basic validation to catch obvious errors
+    if not formula or not re.match(r'^[A-Za-z0-9\(\)]+$', formula):
+        raise ValueError(f"Invalid formula format: {formula}")
+    
+    # Check for balanced parentheses
+    stack = []
+    for char in formula:
+        if char == '(':
+            stack.append(char)
+        elif char == ')':
+            if not stack:
+                raise ValueError(f"Unbalanced parentheses in formula: {formula}")
+            stack.pop()
+    
+    if stack:
+        raise ValueError(f"Unbalanced parentheses in formula: {formula}")
+    
+    return formula
+
 # API endpoint for molar mass calculation
 @app.post("/molar-mass", response_model=FormulaResponse)
 def get_molar_mass(request: FormulaRequest, db: Session = Depends(get_db), req: Request = None):
     try:
+        # Validate formula format first
+        validate_formula(request.formula)
+        
         molar_mass = calculate_molar_mass(request.formula)
         result = {
             "formula": request.formula,
@@ -121,31 +175,58 @@ def get_molar_mass(request: FormulaRequest, db: Session = Depends(get_db), req: 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# Save formula to history
-@app.post("/save")
-def save_formula(request: FormulaRequest, db: Session = Depends(get_db), req: Request = None):
-    try:
-        molar_mass = calculate_molar_mass(request.formula)
-        
-        client_ip = req.client.host if req else None
-        db_formula = FormulaHistory(
-            formula=request.formula,
-            molar_mass=round(molar_mass, 4),
-            user_ip=client_ip
-        )
-        db.add(db_formula)
-        db.commit()
-        db.refresh(db_formula)
-        
-        return {"message": "Formula saved successfully", "id": db_formula.id}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving formula: {str(e)}")
 
 # Get formula history
 @app.get("/history", response_model=List[FormulaHistoryModel])
 def get_history(limit: int = 10, db: Session = Depends(get_db)):
     formulas = db.query(FormulaHistory).order_by(FormulaHistory.timestamp.desc()).limit(limit).all()
     return formulas
+
+# Update formula in history
+@app.put("/history/{formula_id}", response_model=FormulaHistoryModel)
+def update_formula(formula_id: int, request: FormulaRequest, db: Session = Depends(get_db)):
+    try:
+        # Find the formula by ID
+        db_formula = db.query(FormulaHistory).filter(FormulaHistory.id == formula_id).first()
+        if not db_formula:
+            raise HTTPException(status_code=404, detail=f"Formula with ID {formula_id} not found")
+        
+        # Validate formula format first
+        validate_formula(request.formula)
+        
+        # Calculate new molar mass
+        molar_mass = calculate_molar_mass(request.formula)
+        
+        # Update the formula
+        db_formula.formula = request.formula
+        db_formula.molar_mass = round(molar_mass, 4)
+        db_formula.timestamp = datetime.now()  # Update timestamp to current time
+        
+        db.commit()
+        db.refresh(db_formula)
+        
+        return db_formula
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating formula: {str(e)}")
+
+# Delete formula from history
+@app.delete("/history/{formula_id}")
+def delete_formula(formula_id: int, db: Session = Depends(get_db)):
+    try:
+        # Find the formula by ID
+        db_formula = db.query(FormulaHistory).filter(FormulaHistory.id == formula_id).first()
+        if not db_formula:
+            raise HTTPException(status_code=404, detail=f"Formula with ID {formula_id} not found")
+        
+        # Delete the formula
+        db.delete(db_formula)
+        db.commit()
+        
+        return {"message": f"Formula with ID {formula_id} deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting formula: {str(e)}")
 
 # Simple health check endpoint
 @app.get("/")
