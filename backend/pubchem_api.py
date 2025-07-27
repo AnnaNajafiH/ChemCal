@@ -43,7 +43,15 @@ class PubChemAPI:
             logger.info(f"Found CID {cid} for formula: {formula}")
             
             # Step 2: Fetch properties using the CID
-            return PubChemAPI._fetch_properties_by_cid(cid)
+            properties = PubChemAPI._fetch_properties_by_cid(cid)
+            
+            # Step 3: Add image URLs
+            properties["structure_image_url"] = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/PNG"
+            # SVG format seems to have issues, so we'll just use PNG for now
+            properties["structure_image_svg_url"] = None
+            properties["compound_url"] = f"https://pubchem.ncbi.nlm.nih.gov/compound/{cid}"
+            
+            return properties
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching data from PubChem: {str(e)}")

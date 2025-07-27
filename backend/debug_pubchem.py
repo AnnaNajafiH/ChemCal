@@ -2,29 +2,44 @@ import sys
 sys.path.append('.')
 import requests
 import json
+from pubchem_api import PubChemAPI
 
-# Test with water
-cid = 962  # Water's CID
-base_url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
+# Test compounds
+test_compounds = ["H2O", "C6H12O6", "NaCl"]
 
-# Get detailed properties
-record_url = f"{base_url}/compound/cid/{cid}/JSON"
-print(f"Requesting: {record_url}")
-response = requests.get(record_url, timeout=30)
-data = response.json()
-
-# Save the full response to a file for analysis
-with open('pubchem_response.json', 'w') as f:
-    json.dump(data, indent=2, fp=f)
-
-# Print just the properties section
-if "PC_Compounds" in data and len(data["PC_Compounds"]) > 0:
-    compound = data["PC_Compounds"][0]
-    if "props" in compound:
-        print("Properties found:")
-        for prop in compound.get("props", [])[:5]:  # Just print the first 5 for brevity
-            print(json.dumps(prop, indent=2))
-    else:
-        print("No props section found in compound data")
-else:
-    print("No compound data found")
+for formula in test_compounds:
+    print(f"\n--- Testing formula: {formula} ---")
+    properties = PubChemAPI.fetch_compound_properties(formula)
+    
+    if not properties:
+        print(f"No properties found for {formula}")
+        continue
+        
+    print("Properties found:")
+    for key, value in properties.items():
+        print(f"{key}: {value}")
+        
+    # Check if structure image URLs are working
+    if "structure_image_url" in properties:
+        image_url = properties["structure_image_url"]
+        print(f"\nTesting image URL: {image_url}")
+        try:
+            response = requests.head(image_url, timeout=5)
+            if response.status_code == 200:
+                print(f"✅ Image URL is valid (status code: {response.status_code})")
+            else:
+                print(f"❌ Image URL returned status code: {response.status_code}")
+        except Exception as e:
+            print(f"❌ Error testing image URL: {str(e)}")
+            
+    if "structure_image_svg_url" in properties:
+        svg_url = properties["structure_image_svg_url"]
+        print(f"\nTesting SVG URL: {svg_url}")
+        try:
+            response = requests.head(svg_url, timeout=5)
+            if response.status_code == 200:
+                print(f"✅ SVG URL is valid (status code: {response.status_code})")
+            else:
+                print(f"❌ SVG URL returned status code: {response.status_code}")
+        except Exception as e:
+            print(f"❌ Error testing SVG URL: {str(e)}")

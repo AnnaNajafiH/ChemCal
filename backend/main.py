@@ -118,6 +118,9 @@ class FormulaResponse(BaseModel):
     state_at_room_temp: Optional[str] = None
     iupac_name: Optional[str] = None
     hazard_classification: Optional[str] = None
+    structure_image_url: Optional[str] = None
+    structure_image_svg_url: Optional[str] = None
+    compound_url: Optional[str] = None
 
 class FormulaHistoryModel(BaseModel):
     id: int
@@ -130,6 +133,9 @@ class FormulaHistoryModel(BaseModel):
     state_at_room_temp: Optional[str] = None
     iupac_name: Optional[str] = None
     hazard_classification: Optional[str] = None
+    structure_image_url: Optional[str] = None
+    structure_image_svg_url: Optional[str] = None
+    compound_url: Optional[str] = None
     
     class Config:
         orm_mode = True
@@ -177,7 +183,10 @@ def get_molar_mass(request: FormulaRequest, db: Session = Depends(get_db), req: 
             "density": properties.get("density"),
             "state_at_room_temp": properties.get("state_at_room_temp"),
             "iupac_name": properties.get("iupac_name"),
-            "hazard_classification": properties.get("hazard_classification")
+            "hazard_classification": properties.get("hazard_classification"),
+            "structure_image_url": properties.get("structure_image_url"),
+            "structure_image_svg_url": properties.get("structure_image_svg_url"),
+            "compound_url": properties.get("compound_url")
         }
         
         # Try to save in database but don't fail if database is not available
@@ -192,7 +201,10 @@ def get_molar_mass(request: FormulaRequest, db: Session = Depends(get_db), req: 
                 density=result["density"],
                 state_at_room_temp=result["state_at_room_temp"],
                 iupac_name=result["iupac_name"],
-                hazard_classification=result["hazard_classification"]
+                hazard_classification=result["hazard_classification"],
+                structure_image_url=result["structure_image_url"],
+                structure_image_svg_url=result["structure_image_svg_url"],
+                compound_url=result["compound_url"]
             )
             db.add(db_formula)
             db.commit()

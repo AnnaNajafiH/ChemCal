@@ -42,6 +42,9 @@ class FormulaHistory(Base):
     state_at_room_temp = Column(String(50), nullable=True)
     iupac_name = Column(String(255), nullable=True)
     hazard_classification = Column(String(255), nullable=True)
+    structure_image_url = Column(String(255), nullable=True)
+    structure_image_svg_url = Column(String(255), nullable=True)
+    compound_url = Column(String(255), nullable=True)
 
 # Function to create all tables
 def create_tables():
