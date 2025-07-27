@@ -23,11 +23,19 @@ const isFormulaValid = (formula: string): boolean => {
   return stack === 0; // All parentheses should be balanced
 };
 
+
+
 interface FormulaHistoryItem {
   id: number;
   formula: string;
   molar_mass: number;
   timestamp: string;
+  boiling_point?: string | null;
+  melting_point?: string | null;
+  density?: string | null;
+  state_at_room_temp?: string | null;
+  iupac_name?: string | null;
+  hazard_classification?: string | null;
 }
 
 interface FormulaHistoryProps {
@@ -233,19 +241,69 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
               )}
             </div>
           ) : (
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-                <FaFlask className="text-blue-500 dark:text-blue-400 mr-2" />
-                <span 
-                  className="font-medium dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
-                  onClick={() => onFormulaSelect && onFormulaSelect(item.formula)}
-                  title="Click to use this formula"
-                >
-                  {formatFormula(item.formula)}
-                </span>
+            <>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <FaFlask className="text-blue-500 dark:text-blue-400 mr-2" />
+                  <span 
+                    className="font-medium dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                    onClick={() => onFormulaSelect && onFormulaSelect(item.formula)}
+                    title="Click to use this formula"
+                  >
+                    {formatFormula(item.formula)}
+                  </span>
+                </div>
+                <span className="text-gray-600 dark:text-gray-300 font-mono">{item.molar_mass.toFixed(4)} g/mol</span>
               </div>
-              <span className="text-gray-600 dark:text-gray-300 font-mono">{item.molar_mass.toFixed(4)} g/mol</span>
-            </div>
+
+              {/* Display additional properties if they exist */}
+              {(item.iupac_name || item.state_at_room_temp || item.density || 
+                item.melting_point || item.boiling_point || item.hazard_classification) && (
+                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs border-t pt-2 border-gray-100 dark:border-gray-700">
+                  {item.iupac_name && (
+                    <>
+                      <div className="text-gray-500 dark:text-gray-400">IUPAC:</div>
+                      <div className="text-gray-600 dark:text-gray-300">{item.iupac_name}</div>
+                    </>
+                  )}
+                  
+                  {item.state_at_room_temp && (
+                    <>
+                      <div className="text-gray-500 dark:text-gray-400">State:</div>
+                      <div className="text-gray-600 dark:text-gray-300">{item.state_at_room_temp}</div>
+                    </>
+                  )}
+                  
+                  {item.density && (
+                    <>
+                      <div className="text-gray-500 dark:text-gray-400">Density:</div>
+                      <div className="text-gray-600 dark:text-gray-300">{item.density}</div>
+                    </>
+                  )}
+                  
+                  {item.melting_point && (
+                    <>
+                      <div className="text-gray-500 dark:text-gray-400">Melting pt:</div>
+                      <div className="text-gray-600 dark:text-gray-300">{item.melting_point}</div>
+                    </>
+                  )}
+                  
+                  {item.boiling_point && (
+                    <>
+                      <div className="text-gray-500 dark:text-gray-400">Boiling pt:</div>
+                      <div className="text-gray-600 dark:text-gray-300">{item.boiling_point}</div>
+                    </>
+                  )}
+                  
+                  {item.hazard_classification && (
+                    <>
+                      <div className="text-gray-500 dark:text-gray-400">Hazard:</div>
+                      <div className="text-gray-600 dark:text-gray-300">{item.hazard_classification}</div>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
           )}
           <div className="flex justify-between items-center mt-2">
             <div className="text-xs text-gray-500 dark:text-gray-400">

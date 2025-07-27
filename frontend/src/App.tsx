@@ -12,6 +12,12 @@ interface FormulaResult {
   formula: string;
   molar_mass: number;
   unit: string;
+  boiling_point?: string | null;
+  melting_point?: string | null;
+  density?: string | null;
+  state_at_room_temp?: string | null;
+  iupac_name?: string | null;
+  hazard_classification?: string | null;
   error?: string;
 }
 
@@ -280,6 +286,60 @@ function App() {
                         <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                           {result.molar_mass} {result.unit}
                         </div>
+
+                        {result.iupac_name && (
+                          <>
+                            <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>IUPAC Name:</div>
+                            <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {result.iupac_name}
+                            </div>
+                          </>
+                        )}
+
+                        {result.state_at_room_temp && (
+                          <>
+                            <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>State at Room Temp:</div>
+                            <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {result.state_at_room_temp}
+                            </div>
+                          </>
+                        )}
+
+                        {result.density && (
+                          <>
+                            <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Density:</div>
+                            <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {result.density}
+                            </div>
+                          </>
+                        )}
+
+                        {result.melting_point && (
+                          <>
+                            <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Melting Point:</div>
+                            <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {result.melting_point}
+                            </div>
+                          </>
+                        )}
+
+                        {result.boiling_point && (
+                          <>
+                            <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Boiling Point:</div>
+                            <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {result.boiling_point}
+                            </div>
+                          </>
+                        )}
+
+                        {result.hazard_classification && (
+                          <>
+                            <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Hazard Classification:</div>
+                            <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {result.hazard_classification}
+                            </div>
+                          </>
+                        )}
                       </div>
                       
                       {showFormula && (
