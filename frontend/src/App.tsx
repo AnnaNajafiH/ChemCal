@@ -149,7 +149,7 @@ function App() {
           <div className="flex justify-between items-center">
             <div className="flex items-center">
               <BiAtom className="h-8 w-8 text-blue-600 mr-2" />
-              <h1 className={`md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Molar Mass Calculator</h1>
+              <h1 className={`md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>ChemCalc...</h1>
             </div>
                     <div className="flex items-center space-x-4">
               <button 
@@ -280,9 +280,9 @@ function App() {
                     </div>
                     
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} p-4 rounded-md shadow-sm`}>
-                      <div className="grid grid-cols-2 gap-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4">
                         <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Formula:</div>
-                        <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'} break-words`}>
                           {formatFormula(result.formula)}
                         </div>
                         
@@ -294,7 +294,7 @@ function App() {
                         {result.iupac_name && (
                           <>
                             <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>IUPAC Name:</div>
-                            <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'} break-words`}>
                               {result.iupac_name}
                             </div>
                           </>
@@ -348,7 +348,7 @@ function App() {
                       
                       {/* Display molecular structure if available */}
                       {result.structure_image_url && (
-                        <div className="mt-6 flex justify-center border-t pt-5 border-gray-200 dark:border-gray-700">
+                        <div className="mt-6 flex flex-col items-center border-t pt-5 border-gray-200 dark:border-gray-700">
                           <a 
                             href={result.compound_url || result.structure_image_url} 
                             target="_blank" 
@@ -358,9 +358,20 @@ function App() {
                             <img 
                               src={result.structure_image_url} 
                               alt={`Molecular structure of ${result.formula}`}
-                              className="max-h-72 min-h-56 w-auto object-contain rounded-lg bg-white p-3 shadow-md border border-gray-100 dark:border-gray-700 transform hover:scale-105 transition-transform duration-200"
+                              className="max-h-72 min-h-48 w-auto object-contain rounded-lg bg-white p-3 shadow-md border border-gray-100 dark:border-gray-700 transform hover:scale-105 transition-transform duration-200"
                             />
                           </a>
+                          {result.compound_url && (
+                            <a 
+                              href={result.compound_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="mt-2 text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"
+                            >
+                              <FaInfoCircle className="mr-1" size={10} />
+                              View more details
+                            </a>
+                          )}
                         </div>
                       )}
                       
@@ -381,7 +392,7 @@ function App() {
                       
                       <div className="mt-4 flex justify-end">
                         <span className="text-xs text-green-600 dark:text-green-400">
-                          <FaSave className="inline-block mr-1.5" />
+                          <FaSave className="inline-block sm:text-xxs mr-1.5" />
                           Automatically saved to history
                         </span>
                       </div>

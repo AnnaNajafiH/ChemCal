@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaTrash, FaFlask, FaHistory, FaPencilAlt, FaSave, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+import { FaTrash, FaFlask, FaHistory, FaPencilAlt, FaSave, FaTimes, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 import React from 'react';
 import API_URL from '../config';
 
@@ -262,7 +262,7 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
 
               {/* Display molecular structure if available */}
               {item.structure_image_url && (
-                <div className="mt-3 flex justify-center border-t pt-3 border-gray-100 dark:border-gray-700">
+                <div className="mt-3 flex flex-col items-center border-t pt-3 border-gray-100 dark:border-gray-700">
                   <a 
                     href={item.compound_url || item.structure_image_url} 
                     target="_blank" 
@@ -275,17 +275,28 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
                       className="max-h-44 min-h-36 w-auto object-contain rounded-lg bg-white p-2 shadow-sm border border-gray-100 dark:border-gray-700 transform hover:scale-105 transition-transform duration-200"
                     />
                   </a>
+                  {item.compound_url && (
+                    <a 
+                      href={item.compound_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="mt-1 text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"
+                    >
+                      <FaInfoCircle className="mr-1" size={10} />
+                      View on PubChem
+                    </a>
+                  )}
                 </div>
               )}
 
               {/* Display additional properties if they exist */}
               {(item.iupac_name || item.state_at_room_temp || item.density || 
                 item.melting_point || item.boiling_point || item.hazard_classification) && (
-                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs border-t pt-2 border-gray-100 dark:border-gray-700">
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs border-t pt-2 border-gray-100 dark:border-gray-700">
                   {item.iupac_name && (
                     <>
                       <div className="text-gray-500 dark:text-gray-400">IUPAC:</div>
-                      <div className="text-gray-600 dark:text-gray-300">{item.iupac_name}</div>
+                      <div className="text-gray-600 dark:text-gray-300 break-words">{item.iupac_name}</div>
                     </>
                   )}
                   
