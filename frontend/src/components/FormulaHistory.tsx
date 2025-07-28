@@ -209,33 +209,35 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
         >
           {editingId === item.id ? (
             <div className="flex flex-col mb-2">
-              <div className="flex items-center">
+              <div className="flex flex-wrap items-center">
                 <input
                   type="text"
                   value={editFormula}
                   onChange={(e) => handleEditChange(e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded dark:bg-gray-700 ${
+                  className={`flex-1 min-w-0 px-3 py-2 border rounded dark:bg-gray-700 ${
                     !isValidEdit ? 'border-red-500' : 'dark:border-gray-600'
                   } dark:text-white`}
                   placeholder="Enter chemical formula"
                 />
-                <button 
-                  onClick={() => saveEdit(item.id)}
-                  className={`ml-2 p-2 ${
-                    !isValidEdit ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300'
-                  }`}
-                  title="Save"
-                  disabled={!isValidEdit}
-                >
-                  <FaSave />
-                </button>
-                <button 
-                  onClick={cancelEditing}
-                  className="ml-2 p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                  title="Cancel"
-                >
-                  <FaTimes />
-                </button>
+                <div className="flex mt-2 sm:mt-0 sm:ml-2">
+                  <button 
+                    onClick={() => saveEdit(item.id)}
+                    className={`p-2 ${
+                      !isValidEdit ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300'
+                    }`}
+                    title="Save"
+                    disabled={!isValidEdit}
+                  >
+                    <FaSave />
+                  </button>
+                  <button 
+                    onClick={cancelEditing}
+                    className="ml-2 p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                    title="Cancel"
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
               </div>
               {!isValidEdit && (
                 <div className="mt-1 flex items-center text-red-500 text-xs">
@@ -246,18 +248,18 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
             </div>
           ) : (
             <>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
                 <div className="flex items-center">
-                  <FaFlask className="text-blue-500 dark:text-blue-400 mr-2" />
+                  <FaFlask className="text-blue-500 dark:text-blue-400 mr-2 flex-shrink-0" />
                   <span 
-                    className="font-medium dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                    className="font-medium dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-words"
                     onClick={() => onFormulaSelect && onFormulaSelect(item.formula)}
                     title="Click to use this formula"
                   >
                     {formatFormula(item.formula)}
                   </span>
                 </div>
-                <span className="text-gray-600 dark:text-gray-300 font-mono">{item.molar_mass.toFixed(4)} g/mol</span>
+                <span className="text-gray-600 dark:text-gray-300 font-mono mt-1 sm:mt-0">{item.molar_mass.toFixed(4)} g/mol</span>
               </div>
 
               {/* Display molecular structure if available */}
@@ -338,11 +340,11 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
               )}
             </>
           )}
-          <div className="flex justify-between items-center mt-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-2">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 sm:mb-0">
               {new Date(item.timestamp).toLocaleString()}
             </div>
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 justify-end">
               {editingId !== item.id && (
                 <button
                   onClick={() => startEditing(item)}
