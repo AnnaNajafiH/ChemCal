@@ -1,0 +1,24 @@
+# Settings in the [build] context are global and are applied to
+# all contexts unless overridden by more specific contexts.
+[build]
+  base = "frontend/"
+  publish = "dist/"
+  command = "npm run build"
+
+# Environment variables
+[build.environment]
+  NODE_VERSION = "18"
+
+# Redirects and headers
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# This makes sure Netlify treats our app as an SPA
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    Cache-Control = "no-cache"

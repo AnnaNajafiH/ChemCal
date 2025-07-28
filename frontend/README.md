@@ -1,11 +1,16 @@
-# React + TypeScript + Vite
+# Molar Mass Calculator Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This application is the frontend for the Molar Mass Calculator. It's built with React, TypeScript, and Vite.
 
-Currently, two official plugins are available:
+## Deployment on Netlify
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This frontend is configured for deployment on Netlify. The `netlify.toml` file in the root of the repository contains the configuration for the build.
+
+### Environment Variables
+
+When deploying to Netlify, you should set the following environment variables:
+
+- `VITE_API_URL`: URL of the backend API deployed on Render (e.g., https://molar-mass-calculator-api.onrender.com)
 
 ## Expanding the ESLint configuration
 
