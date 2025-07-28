@@ -13,6 +13,9 @@ from pubchem_api import get_chemical_properties
 app = FastAPI(title="Molar Mass Calculator API", 
               description="API for calculating molar mass of chemical compounds")
 
+# Create database tables on startup
+create_tables()
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
