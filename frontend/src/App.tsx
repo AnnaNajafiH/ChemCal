@@ -219,7 +219,7 @@ function App() {
                       </div>
                       
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {['H2O', 'CO2', 'NaCl', 'C6H12O6', 'Ca(OH)2'].map((example) => (
+                        {['NaCl', 'Ca(OH)2', 'C13H16O8', 'C6H12O6', 'C21H22O9'].map((example) => (
                           <button
                             key={example}
                             type="button"
