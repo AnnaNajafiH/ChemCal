@@ -259,7 +259,7 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
                     {formatFormula(item.formula)}
                   </span>
                 </div>
-                <span className="text-gray-600 dark:text-gray-300 font-mono mt-1 sm:mt-0">{item.molar_mass.toFixed(4)} g/mol</span>
+                <span className="sm:text-xs md:text-sm text-gray-600 dark:text-gray-300 font-mono mt-1 sm:mt-0">{item.molar_mass.toFixed(4)} g/mol</span>
               </div>
 
               {/* Display molecular structure if available */}
