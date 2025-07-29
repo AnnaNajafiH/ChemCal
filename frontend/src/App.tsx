@@ -358,7 +358,7 @@ function App() {
                             <img 
                               src={result.structure_image_url} 
                               alt={`Molecular structure of ${result.formula}`}
-                              className="max-h-72 min-h-48 w-auto object-contain rounded-lg bg-white p-3 shadow-md border border-gray-100 dark:border-gray-700 transform hover:scale-105 transition-transform duration-200"
+                              className="max-h-60 min-h-48 w-auto object-contain rounded-lg bg-white p-3 shadow-md border border-gray-100 dark:border-gray-700 transform hover:scale-105 transition-transform duration-200"
                             />
                           </a>
                           {result.compound_url && (

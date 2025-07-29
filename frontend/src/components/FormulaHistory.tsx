@@ -201,7 +201,7 @@ const FormulaHistory: React.FC<FormulaHistoryProps> = ({ refresh = 0, onFormulaS
   }
 
   return (
-    <div className="space-y-3 max-h-80 overflow-auto pr-2 styled-scrollbar">
+    <div className="space-y-3 max-h-[calc(90vh-12rem)] overflow-auto pr-2 styled-scrollbar">
       {history.map((item) => (
         <div 
           key={item.id} 
