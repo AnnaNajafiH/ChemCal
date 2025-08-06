@@ -1,17 +1,22 @@
-import re
 import json
 import os
-from typing import List, Optional
-from fastapi import FastAPI, HTTPException, Depends, Request
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
+import re
 from datetime import datetime
-from database import FormulaHistory, get_db, create_tables
+from typing import Dict, List, Optional
+
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from database import FormulaHistory, create_tables, get_db
 from pubchem_api import get_chemical_properties
 
-app = FastAPI(title="Molar Mass Calculator API", 
-              description="API for calculating molar mass of chemical compounds")
+# Initialize FastAPI app
+app = FastAPI(
+    title="Molar Mass Calculator API", 
+    description="API for calculating molar mass of chemical compounds"
+)
 
 # Create database tables on startup
 create_tables()
@@ -39,9 +44,6 @@ def parse_formula(formula):
         tokens = re.findall(r'[A-Z][a-z]?|\d+|\(|\)', formula)
         if not tokens:
             raise ValueError(f"Invalid formula format: {formula}")
-        
-        # Print the tokens for debugging
-        print(f"Tokens for {formula}: {tokens}")
         
         stack = [[]]
         i = 0
@@ -81,7 +83,6 @@ def parse_formula(formula):
                 stack[-1].append((element, count))
             elif token.isdigit():
                 # This handles cases where we have a digit without a preceding element
-                # which is an error in chemical formulas
                 raise ValueError(f"Unexpected number in formula: {formula} at position {i-1}")
             else:
                 # This should not happen with our regex pattern
@@ -98,7 +99,19 @@ def parse_formula(formula):
         raise ValueError(f"Error parsing formula: {str(e)}")
 
 
-def calculate_molar_mass(formula):
+def calculate_molar_mass(formula: str) -> float:
+    """
+    Calculate the molar mass of a chemical formula.
+    
+    Args:
+        formula (str): Chemical formula
+        
+    Returns:
+        float: Calculated molar mass in g/mol
+        
+    Raises:
+        ValueError: If formula contains unknown elements
+    """
     parsed = parse_formula(formula)
     total_mass = 0
     for element, count in parsed:
@@ -107,11 +120,15 @@ def calculate_molar_mass(formula):
         total_mass += atomic_masses[element] * count
     return total_mass
 
+
 # Pydantic models for request/response validation
 class FormulaRequest(BaseModel):
+    """Request model for formula calculations"""
     formula: str
 
+
 class FormulaResponse(BaseModel):
+    """Response model for formula calculations with physical properties"""
     formula: str
     molar_mass: float
     unit: str
@@ -125,7 +142,9 @@ class FormulaResponse(BaseModel):
     structure_image_svg_url: Optional[str] = None
     compound_url: Optional[str] = None
 
+
 class FormulaHistoryModel(BaseModel):
+    """Model for formula history data"""
     id: int
     formula: str
     molar_mass: float
@@ -171,6 +190,7 @@ def get_molar_mass(request: FormulaRequest, db: Session = Depends(get_db), req: 
         # Validate formula format first
         validate_formula(request.formula)
         
+        # Calculate molar mass
         molar_mass = calculate_molar_mass(request.formula)
         
         # Fetch physical/chemical properties from PubChem API
@@ -192,27 +212,8 @@ def get_molar_mass(request: FormulaRequest, db: Session = Depends(get_db), req: 
             "compound_url": properties.get("compound_url")
         }
         
-        # Try to save in database but don't fail if database is not available
-        try:
-            client_ip = req.client.host if req else None
-            db_formula = FormulaHistory(
-                formula=request.formula,
-                molar_mass=round(molar_mass, 4),
-                user_ip=client_ip,
-                boiling_point=result["boiling_point"],
-                melting_point=result["melting_point"],
-                density=result["density"],
-                state_at_room_temp=result["state_at_room_temp"],
-                iupac_name=result["iupac_name"],
-                hazard_classification=result["hazard_classification"],
-                structure_image_url=result["structure_image_url"],
-                structure_image_svg_url=result["structure_image_svg_url"],
-                compound_url=result["compound_url"]
-            )
-            db.add(db_formula)
-            db.commit()
-        except Exception as db_error:
-            print(f"Database error (non-critical): {str(db_error)}")
+        # Save to database (non-critical operation)
+        _save_to_database(db, request.formula, molar_mass, properties, req)
         
         return result
     except ValueError as e:
@@ -221,11 +222,45 @@ def get_molar_mass(request: FormulaRequest, db: Session = Depends(get_db), req: 
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
+def _save_to_database(db: Session, formula: str, molar_mass: float, properties: Dict, req: Request = None) -> None:
+    """
+    Helper function to save formula data to database.
+    
+    Args:
+        db: Database session
+        formula: Chemical formula
+        molar_mass: Calculated molar mass
+        properties: Chemical properties dictionary
+        req: Request object for client IP tracking
+    """
+    try:
+        client_ip = req.client.host if req else None
+        db_formula = FormulaHistory(
+            formula=formula,
+            molar_mass=round(molar_mass, 4),
+            user_ip=client_ip,
+            boiling_point=properties.get("boiling_point"),
+            melting_point=properties.get("melting_point"),
+            density=properties.get("density"),
+            state_at_room_temp=properties.get("state_at_room_temp"),
+            iupac_name=properties.get("iupac_name"),
+            hazard_classification=properties.get("hazard_classification"),
+            structure_image_url=properties.get("structure_image_url"),
+            structure_image_svg_url=properties.get("structure_image_svg_url"),
+            compound_url=properties.get("compound_url")
+        )
+        db.add(db_formula)
+        db.commit()
+    except Exception as db_error:
+        print(f"Database error (non-critical): {str(db_error)}")
+
+
 # Get formula history
 @app.get("/history", response_model=List[FormulaHistoryModel])
 def get_history(limit: int = 10, db: Session = Depends(get_db)):
     formulas = db.query(FormulaHistory).order_by(FormulaHistory.timestamp.desc()).limit(limit).all()
     return formulas
+
 
 # Update formula in history
 @app.put("/history/{formula_id}", response_model=FormulaHistoryModel)
@@ -273,14 +308,20 @@ def delete_formula(formula_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting formula: {str(e)}")
 
+
 # Simple health check endpoint
 @app.get("/")
 def read_root():
+    """Health check endpoint."""
     return {"status": "alive", "message": "Molar Mass Calculator API is running"}
 
 # Create database tables on startup
 @app.on_event("startup")
 def startup_db_client():
+    """
+    Initialize database tables on application startup.
+    Provides helpful troubleshooting information in non-production environments.
+    """
     try:
         create_tables()
         print("Database tables created successfully")

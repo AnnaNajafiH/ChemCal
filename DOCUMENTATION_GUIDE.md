@@ -9,7 +9,7 @@ This project contains several documentation files. To avoid confusion, here's a 
 ## Database Setup Guides
 
 - **database_setup.md**: Guide for setting up the database with XAMPP or other local MySQL server.
-- **DATABASE_SETUP_DOCKER.md**: Comprehensive guide for setting up MySQL with Docker (recommended).
+- **DATABASE_SETUP_DOCKER.md**: Comprehensive guide for setting up MySQL with Docker.
 
 ## Docker Documentation
 
