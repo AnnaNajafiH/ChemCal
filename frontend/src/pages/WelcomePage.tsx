@@ -1,0 +1,123 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import MoleculeViewer from '../components/animation';
+import ErlenmeyerFlask from '../components/ErlenmeyerFlask';
+import { FaArrowRight, FaFlask, FaCalculator, FaDatabase } from 'react-icons/fa';
+import { BiAtom } from 'react-icons/bi';
+
+const WelcomePage: React.FC = () => {
+  const navigate = useNavigate();
+  
+  const handleGetStarted = () => {
+    navigate('/calculator');
+  };
+  
+  return (
+    <div className="welcome-page-container min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl md:text-6xl font-bold text-gray-800 mb-3 flex items-center justify-center">
+          <BiAtom className="text-blue-600 mr-3 h-12 w-12 animate-spin-slow" />
+          ChemCalc
+        </h1>
+        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          Your chemistry tool for calculating molar mass and exploring chemical properties
+        </p>
+      </div>
+      
+      <div className="welcome-card bg-white rounded-xl shadow-xl overflow-hidden p-6 mb-8 max-w-5xl w-full">
+        <div className="flex flex-col md:flex-row items-center gap-8">
+          <div className="w-full md:w-1/2 flex justify-center">
+            <div 
+              className="molecule-container bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg shadow-inner cursor-pointer hover:shadow-lg transition-all duration-300"
+            //   onClick={handleGetStarted}
+            >
+              <MoleculeViewer 
+                width={420} 
+                height={320} 
+                backgroundColor="#f5f7ff"
+              />
+              <p className="text-center text-sm text-blue-600 mt-2">
+                Drag to explore the vibrant 3D model of 3,5-Xylenol
+              </p>
+            </div>
+          </div>
+          
+          <div className="w-full md:w-1/2 space-y-5">
+            <h2 className="text-3xl font-bold text-gray-800 flex items-center">
+              <FaFlask className="text-blue-600 mr-2" />
+              Chemistry Made Easy
+            </h2>
+            
+            <div className="space-y-5">
+              <div className="flex items-start transform transition-all duration-300 hover:translate-x-2 hover:shadow-lg p-3 rounded-lg">
+                <div className="bg-blue-100 p-3 rounded-full mr-4 shadow-md">
+                  <FaCalculator className="text-blue-600 text-xl" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800 text-lg">Precise Calculations</h3>
+                  <p className="text-gray-600">Calculate accurate molar mass for any chemical formula with our advanced algorithm</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start transform transition-all duration-300 hover:translate-x-2 hover:shadow-lg p-3 rounded-lg">
+                <div className="bg-blue-100 p-3 rounded-full mr-4 shadow-md">
+                  <BiAtom className="text-blue-600 text-xl animate-spin-slow" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800 text-lg">Molecular Visualization</h3>
+                  <p className="text-gray-600">Explore interactive 3D models of molecular structures with intuitive controls</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start transform transition-all duration-300 hover:translate-x-2 hover:shadow-lg p-3 rounded-lg">
+                <div className="bg-blue-100 p-3 rounded-full mr-4 shadow-md">
+                  <FaDatabase className="text-blue-600 text-xl" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800 text-lg">Comprehensive Data</h3>
+                  <p className="text-gray-600">Access detailed physical properties from PubChem database for thousands of compounds</p>
+                </div>
+              </div>
+            </div>
+            
+            <button 
+              onClick={handleGetStarted}
+              className="mt-8 w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-md hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-300 flex items-center justify-center text-lg font-medium"
+            >
+              Get Started
+              <FaArrowRight className="ml-2" />
+            </button>
+                  
+      {/* Flask animation in the corner */}
+      <div className="absolute bottom-1 right-5 w-40 h-48 z-10 hover:scale-110 transition-transform duration-300 flask-highlight">
+        <div className="tooltip relative cursor-pointer" data-tip="Chemical reactions in progress!">
+          <ErlenmeyerFlask />
+          <div className="text-center text-sm text-blue-600 font-medium mt-2 bg-white/70 rounded-md px-2 py-1 backdrop-blur-sm">
+            Watch the reaction!
+          </div>
+        </div>
+      </div>
+
+          </div>
+        </div>
+      </div>
+      
+      <div className="text-center p-4 mt-4 backdrop-blur-sm bg-white/30 rounded-lg shadow-inner border border-white/50 w-full max-w-5xl">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="text-gray-500 text-sm">
+            &copy; {new Date().getFullYear()} ChemCalc - Professional Chemistry Tool
+          </div>
+          <div className="mt-2 md:mt-0 flex space-x-4">
+            <a href="https://en.wikipedia.org/wiki/Molar_mass" target="_blank" rel="noopener noreferrer" 
+              className="text-blue-600 hover:text-blue-800 transition-colors text-sm">About Molar Mass</a>
+            <a href="https://pubchem.ncbi.nlm.nih.gov/" target="_blank" rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 transition-colors text-sm">PubChem Database</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+export default WelcomePage;

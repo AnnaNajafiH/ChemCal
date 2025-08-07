@@ -7,7 +7,11 @@ export default {
   ],
   darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      animation: {
+        'spin-slow': 'spin 15s linear infinite',
+      }
+    },
   },
   plugins: [],
 }

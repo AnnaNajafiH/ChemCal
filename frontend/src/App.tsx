@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import FormulaHistory from './components/FormulaHistory';
-import { FaFlask, FaHistory, FaSave, FaCalculator, FaInfoCircle, FaExclamationTriangle } from 'react-icons/fa';
+import MoleculeViewer from './components/animation';
+import { FaFlask, FaHistory, FaSave, FaCalculator, FaInfoCircle, FaExclamationTriangle, FaHome} from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { BiAtom } from 'react-icons/bi';
 import React from 'react';
 import API_URL from './config';
+import { Link } from 'react-router-dom';
+
 
 
 // Types definition
@@ -149,9 +152,9 @@ function App() {
           <div className="flex justify-between items-center">
             <div className="flex items-center">
               <BiAtom className="h-8 w-8 text-blue-600 mr-2" />
-              <h1 className={`md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>ChemCalc...</h1>
+              <h1 className={`md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>ChemCalc</h1>
             </div>
-                    <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4">
               <button 
                 onClick={() => setDarkMode(!darkMode)} 
                 className={`p-2 rounded-full ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}
@@ -167,6 +170,13 @@ function App() {
                   </svg>
                 )}
               </button>
+                      <Link 
+          to="/" 
+          className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+        >
+          <FaHome className="mr-1" />
+          <span>Home</span>
+        </Link>
             </div>
           </div>
         </div>
@@ -347,31 +357,45 @@ function App() {
                       </div>
                       
                       {/* Display molecular structure if available */}
-                      {result.structure_image_url && (
+                      {result.structure_image_url ? (
                         <div className="mt-6 flex flex-col items-center border-t pt-5 border-gray-200 dark:border-gray-700">
-                          <a 
-                            href={result.compound_url || result.structure_image_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-block hover:opacity-80 transition-opacity"
-                          >
-                            <img 
-                              src={result.structure_image_url} 
-                              alt={`Molecular structure of ${result.formula}`}
-                              className="max-h-60 min-h-48 w-auto object-contain rounded-lg bg-white p-3 shadow-md border border-gray-100 dark:border-gray-700 transform hover:scale-105 transition-transform duration-200"
-                            />
-                          </a>
-                          {result.compound_url && (
-                            <a 
-                              href={result.compound_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="mt-2 text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"
-                            >
-                              <FaInfoCircle className="mr-1" size={10} />
-                              View more details
-                            </a>
-                          )}
+                          <div className="flex items-center justify-center gap-8 flex-wrap">
+                            <div>
+                              <a 
+                                href={result.compound_url || result.structure_image_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-block hover:opacity-80 transition-opacity"
+                              >
+                                <img 
+                                  src={result.structure_image_url} 
+                                  alt={`Molecular structure of ${result.formula}`}
+                                  className="max-h-60 min-h-48 w-auto object-contain rounded-lg bg-white p-3 shadow-md border border-gray-100 dark:border-gray-700 transform hover:scale-105 transition-transform duration-200"
+                                />
+                              </a>
+                              {result.compound_url && (
+                                <a 
+                                  href={result.compound_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="mt-2 text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"
+                                >
+                                  <FaInfoCircle className="mr-1" size={10} />
+                                  View more details
+                                </a>
+                              )}
+                            </div>
+
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-6 border-t pt-5 border-gray-200 dark:border-gray-700">
+                          <div className="p-2 bg-white rounded-lg shadow-md border border-gray-100 dark:border-gray-700 dark:bg-gray-800 mx-auto" style={{ width: '240px' }}>
+                            <MoleculeViewer width={240} height={240} />
+                            <p className="text-center text-xs mt-2 text-gray-500 dark:text-gray-400">
+                              3D Model (Water)
+                            </p>
+                          </div>
                         </div>
                       )}
                       
