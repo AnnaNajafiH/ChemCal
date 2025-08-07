@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MoleculeViewer from '../components/animation';
 import ErlenmeyerFlask from '../components/ErlenmeyerFlask';
@@ -7,6 +7,22 @@ import { BiAtom } from 'react-icons/bi';
 
 const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
+  const [darkMode, setDarkMode] = useState(() => {
+    // Check if user has already set a preference
+    const savedMode = localStorage.getItem('darkMode');
+    // Otherwise check for system preference
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return savedMode ? savedMode === 'true' : prefersDark;
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('darkMode', darkMode.toString());
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
   
   const handleGetStarted = () => {
     navigate('/calculator');
@@ -14,7 +30,35 @@ const WelcomePage: React.FC = () => {
   
   return (
     <div className="welcome-page-container min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 dark:bg-gray-900">
-      <div className="text-center mb-8">
+      <header className={`fixed top-0 left-0 right-0 border-b ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm z-50`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
+              <BiAtom className="h-8 w-8 text-blue-600 mr-2" />
+              <h1 className={`md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>ChemCalc</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button 
+                onClick={() => setDarkMode(!darkMode)} 
+                className={`p-2 rounded-full ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}
+                aria-label="Toggle dark mode"
+              >
+                {darkMode ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-300" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      <div className="text-center mb-8 mt-16">
         <h1 className="text-4xl md:text-6xl font-bold text-gray-800 dark:text-gray-100 mb-3 flex items-center justify-center">
           <BiAtom className="text-blue-600 dark:text-blue-400 mr-3 h-12 w-12 animate-spin-slow" />
           ChemCalc
@@ -26,9 +70,8 @@ const WelcomePage: React.FC = () => {
       
       <div className="welcome-card bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden p-6 mb-8 max-w-5xl w-full dark:shadow-blue-900/20">
         <div className="flex flex-col md:flex-row items-center gap-8">
-          <div className="w-full md:w-1/2 flex justify-center">
             <div 
-              className="molecule-container bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-900 p-4 rounded-lg shadow-inner cursor-pointer hover:shadow-lg transition-all duration-300"
+              className="w-full md:w-1/2 molecule-container bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-900 p-4 rounded-lg shadow-inner cursor-pointer hover:shadow-lg transition-all duration-300"
             >
               <MoleculeViewer 
                 width={420} 
@@ -39,7 +82,6 @@ const WelcomePage: React.FC = () => {
                 Drag to explore the vibrant 3D model of 3,5-Xylenol
               </p>
             </div>
-          </div>
           
           <div className="w-full md:w-1/2 space-y-5">
             <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center">

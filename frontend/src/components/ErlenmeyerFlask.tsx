@@ -1,7 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 
 const ErlenmeyerFlask: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  // Check for dark mode
+  const checkDarkMode = useCallback(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    setIsDarkMode(isDark);
+  }, []);
   
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -9,6 +16,9 @@ const ErlenmeyerFlask: React.FC = () => {
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    
+    // Initial dark mode check
+    checkDarkMode();
     
     // For high-DPI displays
     const dpr = window.devicePixelRatio || 1;
@@ -25,21 +35,56 @@ const ErlenmeyerFlask: React.FC = () => {
     let liquidLevel = 0.2; // Start with flask 50% full - we'll be adding to it
     let droplets: { x: number, y: number, size: number, speed: number, opacity: number }[] = [];
     
-    // Colors
-    const flaskColor = '#e5e7eb';
-    const liquidColor = '#3b82f6';
-    const liquidHighlight = '#60a5fa';
-    const bubbleColor = 'rgba(255, 255, 255, 0.7)';
+    // Colors based on mode
+    const getColors = () => {
+      if (isDarkMode) {
+        return {
+          flaskColor: '#374151',
+          liquidColor: '#3b82f6',
+          liquidHighlight: '#60a5fa',
+          bubbleColor: 'rgba(255, 255, 255, 0.5)',
+          outlineColor: '#4b5563',
+          reflectionColor: 'rgba(255, 255, 255, 0.15)',
+          glowColor: 'rgba(59, 130, 246, 0.2)'
+        };
+      } else {
+        return {
+          flaskColor: '#e5e7eb',
+          liquidColor: '#3b82f6',
+          liquidHighlight: '#60a5fa',
+          bubbleColor: 'rgba(255, 255, 255, 0.7)',
+          outlineColor: '#d1d5db',
+          reflectionColor: 'rgba(255, 255, 255, 0.2)',
+          glowColor: 'rgba(59, 130, 246, 0.1)'
+        };
+      }
+    };
     
     // Add bubbles to simulate chemical reaction
-    let bubbles: { x: number, y: number, size: number, speed: number }[] = [];
+    let bubbles: { x: number, y: number, size: number, speed: number, opacity: number }[] = [];
     
     const drawFlask = () => {
       const width = rect.width;
       const height = rect.height;
       
+      // Get current color scheme
+      const colors = getColors();
+      
       // Clear canvas
       ctx.clearRect(0, 0, width, height);
+      
+      // Add a subtle glow effect in dark mode
+      if (isDarkMode) {
+        const glow = ctx.createRadialGradient(
+          width/2, height/2, 10,
+          width/2, height/2, Math.max(width, height)
+        );
+        glow.addColorStop(0, 'rgba(59, 130, 246, 0.15)');
+        glow.addColorStop(1, 'rgba(59, 130, 246, 0)');
+        
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, width, height);
+      }
       
       // Draw flask neck
       const neckWidth = width * 0.15; // Thinner neck
@@ -52,8 +97,22 @@ const ErlenmeyerFlask: React.FC = () => {
       const bodyHeight = height * 0.65; // Shorter body
       const bodyTopY = neckHeight;
       
+      // Draw shadow effect for depth
+      if (!isDarkMode) {
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+      } else {
+        // Glow effect in dark mode
+        ctx.shadowColor = 'rgba(59, 130, 246, 0.3)';
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+      }
+      
       // Draw flask outline
-      ctx.strokeStyle = '#d1d5db';
+      ctx.strokeStyle = colors.outlineColor;
       ctx.lineWidth = 2;
       ctx.beginPath();
       // Neck outline
@@ -67,8 +126,14 @@ const ErlenmeyerFlask: React.FC = () => {
       ctx.lineTo(neckX + neckWidth, neckHeight);
       ctx.stroke();
       
+      // Reset shadow for the rest of the drawing
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      
       // Fill flask
-      ctx.fillStyle = flaskColor;
+      ctx.fillStyle = colors.flaskColor;
       ctx.beginPath();
       // Neck
       ctx.rect(neckX, 0, neckWidth, neckHeight);
@@ -128,7 +193,30 @@ const ErlenmeyerFlask: React.FC = () => {
       const liquidTopWidth = interpolateWidth(currentLiquidLevel);
       const liquidTopX = width / 2 - liquidTopWidth / 2;
       
-      ctx.fillStyle = liquidColor;
+      // Create gradient for liquid with different colors based on mode
+      const liquidGradient = ctx.createLinearGradient(
+        width / 2 - liquidTopWidth / 2, 
+        currentLiquidLevel, 
+        width / 2 + liquidTopWidth / 2, 
+        height
+      );
+      
+      // Enhanced liquid appearance
+      if (isDarkMode) {
+        liquidGradient.addColorStop(0, '#60a5fa');  // Top color - lighter
+        liquidGradient.addColorStop(0.4, '#3b82f6'); // Middle color
+        liquidGradient.addColorStop(1, '#2563eb');  // Bottom color - darker
+        
+        // Add glow effect
+        ctx.shadowColor = 'rgba(59, 130, 246, 0.5)';
+        ctx.shadowBlur = 15;
+      } else {
+        liquidGradient.addColorStop(0, '#60a5fa');  // Top color - lighter
+        liquidGradient.addColorStop(0.4, '#3b82f6'); // Middle color
+        liquidGradient.addColorStop(1, '#2563eb');  // Bottom color - darker
+      }
+      
+      ctx.fillStyle = liquidGradient;
       ctx.beginPath();
       ctx.moveTo(liquidTopX, currentLiquidLevel);
       ctx.lineTo(width / 2 - bodyBottomWidth / 2, height);
@@ -137,39 +225,107 @@ const ErlenmeyerFlask: React.FC = () => {
       ctx.closePath();
       ctx.fill();
       
-      // Add reflection/highlight to liquid (curved surface)
+      // Reset shadow
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      
+      // Add reflection/highlight to liquid (curved surface) - more dynamic
+      // const waveHeight = 8 + Math.sin(Date.now() * 0.003) * 3; // Animated wave height
       const gradientHeight = 20;
       const gradient = ctx.createLinearGradient(0, currentLiquidLevel, 0, currentLiquidLevel + gradientHeight);
-      gradient.addColorStop(0, liquidHighlight);
-      gradient.addColorStop(1, liquidColor);
+      gradient.addColorStop(0, colors.liquidHighlight);
+      gradient.addColorStop(1, colors.liquidColor);
       
       ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.ellipse(
-        width / 2, 
-        currentLiquidLevel + 5, 
-        liquidTopWidth * 0.4, 
-        8, 
-        0, 
-        0, 
-        Math.PI
-      );
+      
+      // Create a more natural wavy liquid surface
+      ctx.moveTo(liquidTopX, currentLiquidLevel);
+      
+      // Draw a curved wave pattern
+      const segments = 20;
+      const segmentWidth = liquidTopWidth / segments;
+      
+      for (let i = 0; i <= segments; i++) {
+        const x = liquidTopX + i * segmentWidth;
+        const y = currentLiquidLevel + Math.sin(i * 0.5 + Date.now() * 0.002) * 2; // Subtle wave animation
+        
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      
+      ctx.lineTo(width / 2 + liquidTopWidth / 2, currentLiquidLevel + 10);
+      ctx.lineTo(liquidTopX, currentLiquidLevel + 10);
+      ctx.closePath();
       ctx.fill();
       
       // Draw bubbles in liquid
-      ctx.fillStyle = bubbleColor;
       bubbles.forEach(bubble => {
+        // Create a radial gradient for more realistic bubbles
+        const bubbleGradient = ctx.createRadialGradient(
+          bubble.x - bubble.size * 0.3, 
+          bubble.y - bubble.size * 0.3, 
+          0,
+          bubble.x, 
+          bubble.y, 
+          bubble.size
+        );
+        bubbleGradient.addColorStop(0, `rgba(255, 255, 255, ${bubble.opacity * 0.9})`);
+        bubbleGradient.addColorStop(0.8, `rgba(255, 255, 255, ${bubble.opacity * 0.5})`);
+        bubbleGradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+        
+        ctx.fillStyle = bubbleGradient;
         ctx.beginPath();
         ctx.arc(bubble.x, bubble.y, bubble.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Add a small highlight to each bubble
+        ctx.fillStyle = `rgba(255, 255, 255, ${bubble.opacity * 0.8})`;
+        ctx.beginPath();
+        ctx.arc(bubble.x - bubble.size * 0.3, bubble.y - bubble.size * 0.3, bubble.size * 0.2, 0, Math.PI * 2);
         ctx.fill();
       });
       
       // Draw droplets
       droplets.forEach(droplet => {
+        // Create gradient for droplets
+        const dropletGradient = ctx.createRadialGradient(
+          droplet.x - droplet.size * 0.3, 
+          droplet.y - droplet.size * 0.3, 
+          0,
+          droplet.x, 
+          droplet.y, 
+          droplet.size * 1.5
+        );
+        
+        // Adjust droplet appearance based on dark mode
+        if (isDarkMode) {
+          dropletGradient.addColorStop(0, `rgba(96, 165, 250, ${droplet.opacity})`);
+          dropletGradient.addColorStop(1, `rgba(59, 130, 246, ${droplet.opacity * 0.7})`);
+        } else {
+          dropletGradient.addColorStop(0, `rgba(96, 165, 250, ${droplet.opacity})`);
+          dropletGradient.addColorStop(1, `rgba(59, 130, 246, ${droplet.opacity * 0.7})`);
+        }
+        
         // Use opacity for better looking droplets
-        ctx.fillStyle = `rgba(59, 130, 246, ${droplet.opacity})`;
+        ctx.fillStyle = dropletGradient;
         ctx.beginPath();
         ctx.ellipse(droplet.x, droplet.y, droplet.size, droplet.size * 1.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Add a small highlight to each droplet
+        ctx.fillStyle = `rgba(255, 255, 255, ${droplet.opacity * 0.7})`;
+        ctx.beginPath();
+        ctx.ellipse(
+          droplet.x - droplet.size * 0.3, 
+          droplet.y - droplet.size * 0.3, 
+          droplet.size * 0.2, 
+          droplet.size * 0.3, 
+          0, 0, Math.PI * 2
+        );
         ctx.fill();
       });
       
@@ -178,25 +334,97 @@ const ErlenmeyerFlask: React.FC = () => {
         // Draw the pipette
         const pipetteX = width / 2;
         const pipetteY = neckHeight * 0.4; // Position above the neck
-        const pipetteWidth = 4;
+        const pipetteWidth = 5;
         const pipetteHeight = 40;
-        const tipWidth = 2;
+        const tipWidth = 3;
         const tipHeight = 10;
         
+        // Add subtle animation to pipette position
+        const pipetteXOffset = Math.sin(Date.now() * 0.001) * 0.5;
+        
+        // Add shadow/glow effect to the pipette
+        if (isDarkMode) {
+          ctx.shadowColor = 'rgba(59, 130, 246, 0.4)';
+          ctx.shadowBlur = 10;
+        } else {
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+          ctx.shadowBlur = 5;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 1;
+        }
+        
         // Draw pipette body
-        ctx.fillStyle = '#d1d5db'; // Pipette color
+        ctx.fillStyle = isDarkMode ? '#4b5563' : '#d1d5db'; // Pipette color
         ctx.beginPath();
-        ctx.rect(pipetteX - pipetteWidth/2, pipetteY - pipetteHeight, pipetteWidth, pipetteHeight);
+        ctx.rect(pipetteX - pipetteWidth/2 + pipetteXOffset, pipetteY - pipetteHeight, pipetteWidth, pipetteHeight);
         ctx.fill();
         
-        // Draw pipette tip
+        // Draw pipette tip with gradient
+        const tipGradient = ctx.createLinearGradient(
+          pipetteX - tipWidth/2 + pipetteXOffset, 
+          pipetteY,
+          pipetteX + tipWidth/2 + pipetteXOffset, 
+          pipetteY + tipHeight
+        );
+        
+        if (isDarkMode) {
+          tipGradient.addColorStop(0, '#4b5563');
+          tipGradient.addColorStop(1, '#374151');
+        } else {
+          tipGradient.addColorStop(0, '#d1d5db');
+          tipGradient.addColorStop(1, '#9ca3af');
+        }
+        
+        ctx.fillStyle = tipGradient;
         ctx.beginPath();
-        ctx.moveTo(pipetteX - pipetteWidth/2, pipetteY);
-        ctx.lineTo(pipetteX - tipWidth/2, pipetteY + tipHeight);
-        ctx.lineTo(pipetteX + tipWidth/2, pipetteY + tipHeight);
-        ctx.lineTo(pipetteX + pipetteWidth/2, pipetteY);
+        ctx.moveTo(pipetteX - pipetteWidth/2 + pipetteXOffset, pipetteY);
+        ctx.lineTo(pipetteX - tipWidth/2 + pipetteXOffset, pipetteY + tipHeight);
+        ctx.lineTo(pipetteX + tipWidth/2 + pipetteXOffset, pipetteY + tipHeight);
+        ctx.lineTo(pipetteX + pipetteWidth/2 + pipetteXOffset, pipetteY);
         ctx.closePath();
         ctx.fill();
+        
+        // Add a liquid reservoir at the top of the pipette
+        const reservoirWidth = pipetteWidth * 3;
+        const reservoirHeight = 15;
+        
+        ctx.fillStyle = colors.liquidColor;
+        ctx.beginPath();
+        ctx.roundRect(
+          pipetteX - reservoirWidth/2 + pipetteXOffset, 
+          pipetteY - pipetteHeight - reservoirHeight, 
+          reservoirWidth, 
+          reservoirHeight,
+          4
+        );
+        ctx.fill();
+        
+        // Add liquid highlight to reservoir
+        const reservoirHighlight = ctx.createLinearGradient(
+          0, 
+          pipetteY - pipetteHeight - reservoirHeight,
+          0, 
+          pipetteY - pipetteHeight - reservoirHeight/2
+        );
+        reservoirHighlight.addColorStop(0, colors.liquidHighlight);
+        reservoirHighlight.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = reservoirHighlight;
+        ctx.beginPath();
+        ctx.roundRect(
+          pipetteX - reservoirWidth/2 + pipetteXOffset, 
+          pipetteY - pipetteHeight - reservoirHeight, 
+          reservoirWidth, 
+          reservoirHeight/2,
+          [4, 4, 0, 0]
+        );
+        ctx.fill();
+        
+        // Reset shadows
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
         
         // Draw rubber bulb at top of pipette
         ctx.fillStyle = '#cbd5e1'; // Slightly different color for bulb
@@ -287,7 +515,8 @@ const ErlenmeyerFlask: React.FC = () => {
           x,
           y,
           size: 0.8 + Math.random() * 2.2, // More varied sizes
-          speed: 0.3 + Math.random() * 1.2 // More varied speeds
+          speed: 0.3 + Math.random() * 1.2, // More varied speeds
+          opacity: 0.4 + Math.random() * 0.5 // Variable opacity for realism
         });
       }
       
@@ -325,16 +554,27 @@ const ErlenmeyerFlask: React.FC = () => {
     
     animate();
     
+    // Listen for dark mode changes
+    const darkModeObserver = new MutationObserver(() => {
+      checkDarkMode();
+    });
+    
+    darkModeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    
     return () => {
       cancelAnimationFrame(animationId);
+      darkModeObserver.disconnect();
     };
-  }, []);
+  }, [checkDarkMode]);
   
   return (
     <div className="erlenmeyer-flask-container">
       <canvas 
         ref={canvasRef} 
-        className="w-full h-full"
+        className="w-full h-full dark:filter dark:drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]"
         style={{ width: '100%', height: '100%' }}
       />
     </div>

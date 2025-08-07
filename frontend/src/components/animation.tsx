@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 // @ts-ignore - Ignoring type errors for the OrbitControls import
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -80,8 +80,11 @@ function createBond(start: THREE.Vector3, end: THREE.Vector3, radius: number, co
   // Use MeshStandardMaterial for bonds too
   const material = new THREE.MeshStandardMaterial({ 
     color, 
-    metalness: 0.1, 
-    roughness: 0.3
+    metalness: 0.2, 
+    roughness: 0.3,
+    transparent: true,
+    opacity: 0.9,
+    emissive: new THREE.Color(color).multiplyScalar(0.1)
   });
   
   const cylinder = new THREE.Mesh(geometry, material);
@@ -104,17 +107,34 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const frameIdRef = useRef<number>(0);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  // Check for dark mode
+  const checkDarkMode = useCallback(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    setIsDarkMode(isDark);
+    
+    // Update background color if scene exists
+    if (sceneRef.current) {
+      sceneRef.current.background = new THREE.Color(
+        isDark ? '#111827' : backgroundColor
+      );
+    }
+  }, [backgroundColor]);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Initial dark mode check
+    checkDarkMode();
+
     // Create scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(backgroundColor);
+    scene.background = new THREE.Color(isDarkMode ? '#111827' : backgroundColor);
     sceneRef.current = scene;
     
     // Create ambient environment lighting for more realistic reflections
-    const ambientLight = new THREE.AmbientLight(0x404040, 2.0);
+    const ambientLight = new THREE.AmbientLight(0x404040, isDarkMode ? 1.5 : 2.0);
     scene.add(ambientLight);
 
     // Create camera
@@ -132,36 +152,54 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
     renderer.setPixelRatio(window.devicePixelRatio); // For sharper rendering
     // Use tone mapping instead for better lighting
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = isDarkMode ? 1.4 : 1.2;
     // outputEncoding was renamed to outputColorSpace in newer Three.js
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    
+    // Add post-processing for a more professional look
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
     // Add lights for better shininess and highlights
-    scene.add(new THREE.AmbientLight(0x505050, 2.5)); // Brighter ambient light
+    scene.add(new THREE.AmbientLight(isDarkMode ? 0x303050 : 0x505050, isDarkMode ? 3.0 : 2.5)); 
     
     // Add multiple light sources for better highlights
-    const light1 = new THREE.PointLight(0xffffff, 1.2);
+    const light1 = new THREE.PointLight(isDarkMode ? 0x6d8eff : 0xffffff, isDarkMode ? 1.5 : 1.2);
     light1.position.set(5, 5, 5);
+    light1.castShadow = true;
+    light1.shadow.radius = 3;
     scene.add(light1);
     
-    const light2 = new THREE.PointLight(0xeeeeff, 1);
+    const light2 = new THREE.PointLight(isDarkMode ? 0x5d7eff : 0xeeeeff, isDarkMode ? 1.2 : 1);
     light2.position.set(-5, -5, 5);
+    light2.castShadow = true;
+    light2.shadow.radius = 2;
     scene.add(light2);
     
     // Add a spotlight for extra shininess
-    const spotLight = new THREE.SpotLight(0xffffff, 1);
+    const spotLight = new THREE.SpotLight(0xffffff, isDarkMode ? 1.2 : 1);
     spotLight.position.set(0, 10, 0);
     spotLight.angle = Math.PI / 4;
     spotLight.penumbra = 0.2;
     spotLight.distance = 20;
+    spotLight.castShadow = true;
+    spotLight.shadow.mapSize.width = 1024;
+    spotLight.shadow.mapSize.height = 1024;
     scene.add(spotLight);
     
     // Add a directional light from the front
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, isDarkMode ? 1.0 : 0.8);
     directionalLight.position.set(0, 0, 10);
+    directionalLight.castShadow = true;
     scene.add(directionalLight);
+    
+    // Add a rim light for edge highlighting (great for dark mode)
+    const rimLight = new THREE.PointLight(isDarkMode ? 0x3b82f6 : 0xc4d7ff, isDarkMode ? 2 : 1);
+    rimLight.position.set(0, 0, -10);
+    scene.add(rimLight);
 
     // Add controls
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -193,14 +231,33 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
       // Use MeshStandardMaterial for more realistic shiny appearance
       const material = new THREE.MeshStandardMaterial({ 
         color: atomColors[type] || 0xaaaaaa,
-        metalness: 0.3,           // Slightly metallic look
-        roughness: 0.2,           // Very smooth surface (more shiny)
-        envMapIntensity: 1.0,     // Reflection intensity
-        emissive: new THREE.Color(atomColors[type] || 0xaaaaaa).multiplyScalar(0.15) // Slight glow
+        metalness: isDarkMode ? 0.4 : 0.3,        // Slightly metallic look
+        roughness: isDarkMode ? 0.1 : 0.2,        // Very smooth surface (more shiny)
+        envMapIntensity: 1.0,                     // Reflection intensity
+        emissive: new THREE.Color(atomColors[type] || 0xaaaaaa).multiplyScalar(isDarkMode ? 0.25 : 0.15), // Slight glow
+        transparent: true,
+        opacity: 0.95,
       });
       
       const sphere = new THREE.Mesh(atomGeometry, material);
       sphere.position.set(...position);
+      sphere.castShadow = true;
+      sphere.receiveShadow = true;
+      
+      // Add subtle pulse animation to each atom
+      const pulseScale = 1.0 + Math.random() * 0.05;
+      const pulseDuration = 2 + Math.random() * 2;
+      const pulseDelay = Math.random() * 2;
+      
+      // Store initial scale for animation
+      sphere.userData = { 
+        initialScale: sphere.scale.clone(),
+        pulseScale,
+        pulseDuration,
+        pulseDelay,
+        pulseTime: 0 
+      };
+      
       moleculeGroup.add(sphere);
     });
 
@@ -209,17 +266,52 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
       const pos1 = new THREE.Vector3(...molecule.atoms[i1].position);
       const pos2 = new THREE.Vector3(...molecule.atoms[i2].position);
       
+      // Use gradient colors for bonds based on connecting atoms
+      const color1 = atomColors[molecule.atoms[i1].type] || bondColor;
+      const color2 = atomColors[molecule.atoms[i2].type] || bondColor;
+      
+      // Create a bond with the average color
+      const averageColor = new THREE.Color(color1).lerp(new THREE.Color(color2), 0.5).getHex();
+      
       // Thicker bonds look better with shiny atoms
-      const bond = createBond(pos1, pos2, 0.1, bondColor);
+      const bond = createBond(pos1, pos2, 0.12, averageColor);
+      bond.castShadow = true;
+      bond.receiveShadow = true;
       moleculeGroup.add(bond);
     });
+    
+    // Add a subtle bloom/glow effect to the scene for dark mode
+    if (isDarkMode) {
+      // We're just simulating the effect with a subtle ambient light
+      const glowLight = new THREE.AmbientLight(0x3b82f6, 0.3);
+      scene.add(glowLight);
+    }
 
     // Animation function
     const animate = () => {
       frameIdRef.current = requestAnimationFrame(animate);
       
       if (moleculeGroup) {
-        moleculeGroup.rotation.y += 0.005;
+        // Smooth rotation
+        moleculeGroup.rotation.y += 0.004;
+        
+        // Apply subtle bobbing motion
+        const time = Date.now() * 0.001;
+        moleculeGroup.position.y = Math.sin(time * 0.5) * 0.1;
+        
+        // Animate each atom with a subtle pulsing effect
+        moleculeGroup.children.forEach(child => {
+          if (child.userData && child.userData.initialScale) {
+            child.userData.pulseTime += 0.016; // Approximately 60fps
+            
+            if (child.userData.pulseTime > child.userData.pulseDelay) {
+              const normalizedTime = ((child.userData.pulseTime - child.userData.pulseDelay) % child.userData.pulseDuration) / child.userData.pulseDuration;
+              const scale = 1 + Math.sin(normalizedTime * Math.PI * 2) * 0.05 * child.userData.pulseScale;
+              
+              child.scale.copy(child.userData.initialScale).multiplyScalar(scale);
+            }
+          }
+        });
       }
       
       if (controlsRef.current) {
@@ -230,6 +322,16 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
         rendererRef.current.render(sceneRef.current, cameraRef.current);
       }
     };
+
+    // Listen for dark mode changes
+    const darkModeObserver = new MutationObserver(() => {
+      checkDarkMode();
+    });
+    
+    darkModeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
 
     // Start animation
     animate();
@@ -248,6 +350,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
+      darkModeObserver.disconnect();
       cancelAnimationFrame(frameIdRef.current);
       
       if (rendererRef.current && containerRef.current) {
@@ -255,7 +358,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
         rendererRef.current.dispose();
       }
     };
-  }, [backgroundColor, width, height]);
+  }, [backgroundColor, width, height, isDarkMode, checkDarkMode]);
 
   return <div ref={containerRef} className="molecule-viewer" />;
 };
