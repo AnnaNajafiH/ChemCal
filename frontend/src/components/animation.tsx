@@ -130,7 +130,6 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio); // For sharper rendering
-    // Note: physicallyCorrectLights is deprecated in newer Three.js versions
     // Use tone mapping instead for better lighting
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
